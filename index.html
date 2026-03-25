@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Transformation Hub | Admin + User Portal</title>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Auth Container */
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 32px;
+            padding: 32px 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+        }
+
+        .auth-card h2 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #1e2a3e;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 48px;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 48px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .toggle-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: #718096;
+        }
+
+        .toggle-auth a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Main App Container */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: none;
+        }
+
+        /* Header */
+        .app-header {
+            background: white;
+            border-radius: 28px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .user-details h3 {
+            color: #1e2a3e;
+            margin-bottom: 4px;
+        }
+
+        .user-details p {
+            color: #718096;
+            font-size: 0.85rem;
+        }
+
+        .admin-badge {
+            background: #fbbf24;
+            color: #1e2a3e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .btn-logout {
+            background: #ef4444;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 8px;
+            border-radius: 60px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #4a5568;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-pane.active-pane {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #718096;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            font-size: 14px;
+        }
+
+        .habit-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .habit-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f7fafc;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .scroll-table {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            padding: 10px 6px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f7fafc;
+            position: sticky;
+            top: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #f3f4f6 100%);
+            padding: 16px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .sync-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 1000;
+        }
+
+        /* Admin specific */
+        .user-selector {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f7fafc;
+            border-radius: 20px;
+        }
+
+        .user-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .user-chip {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            transition: 0.2s;
+        }
+
+        .user-chip.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .user-chip:hover {
+            background: #e2e8f0;
+        }
+
+        @media (max-width: 640px) {
+            .app-container { padding: 12px; }
+            .tabs { gap: 4px; }
+            .tab-btn { font-size: 12px; padding: 8px; }
+            .habit-check { font-size: 12px; padding: 6px 12px; }
+            .user-list { max-height: 200px; overflow-y: auto; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Container -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <h2><i class="fas fa-dumbbell"></i> Transformation Hub</h2>
+            <div id="loginForm">
+                <div class="input-group">
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                </div>
+                <button class="btn-primary" onclick="login()">Login</button>
+                <div class="toggle-auth">
+                    Don't have an account? <a onclick="showSignup()">Sign Up</a>
+                </div>
+            </div>
+            <div id="signupForm" style="display: none;">
+                <div class="input-group">
+                    <input type="text" id="signupName" placeholder="Full Name" required>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="signupEmail" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" required>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="signupWeight" placeholder="Starting Weight (kg)" step="0.1">
+                </div>
+                <div class="input-group">
+                    <input type="number" id="signupHeight" placeholder="Height (cm)">
+                </div>
+                <div class="input-group">
+                    <select id="signupGoal">
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="muscle_gain">Muscle Gain</option>
+                        <option value="maintenance">Maintenance</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="signup()">Create Account</button>
+                <div class="toggle-auth">
+                    Already have an account? <a onclick="showLogin()">Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="app-container">
+        <div class="app-header">
+            <div class="user-info">
+                <div class="user-details">
+                    <h3 id="userNameDisplay">Loading... <span id="adminBadge" class="admin-badge" style="display:none;">👑 ADMIN</span></h3>
+                    <p id="userStatsDisplay"></p>
+                </div>
+                <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+            <button class="tab-btn" data-tab="log"><i class="fas fa-pen-alt"></i> Daily Log</button>
+            <button class="tab-btn" data-tab="meal"><i class="fas fa-utensils"></i> Meal Plan</button>
+            <button class="tab-btn" data-tab="workout"><i class="fas fa-dumbbell"></i> Workout</button>
+            <button class="tab-btn" data-tab="history"><i class="fas fa-history"></i> History</button>
+            <button class="tab-btn admin-tab" data-tab="admin" style="display:none;"><i class="fas fa-users"></i> Admin Panel</button>
+        </div>
+
+        <!-- User Dashboard -->
+        <div id="dashboard" class="tab-pane active-pane">
+            <div class="card">
+                <div class="card-title">📊 Today's Progress</div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="todayWeight">—</div><div>Current Weight</div></div>
+                    <div class="stat-card"><div class="stat-value" id="todayCalories">—</div><div>Calories Today</div></div>
+                    <div class="stat-card"><div class="stat-value" id="streakDays">—</div><div>Day Streak</div></div>
+                    <div class="stat-card"><div class="stat-value" id="totalWorkouts">—</div><div>Total Workouts</div></div>
+                    <div class="stat-card"><div class="stat-value" id="weightChange">—</div><div>Weight Change</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📈 Weight Trend (Last 30 Days)</div>
+                <canvas id="weightChart" height="200"></canvas>
+            </div>
+            <div class="card">
+                <div class="card-title">✅ Habit Tracker (Last 7 Days)</div>
+                <div id="habitSummary"></div>
+            </div>
+        </div>
+
+        <!-- Daily Log -->
+        <div id="log" class="tab-pane">
+            <div class="card">
+                <div class="card-title">📝 Log Today's Data</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Date</label><input type="date" id="logDate"></div>
+                    <div class="form-group"><label>Weight (kg)</label><input type="number" step="0.1" id="logWeight" placeholder="78.0"></div>
+                    <div class="form-group"><label>Calories</label><input type="number" id="logCalories" placeholder="1800"></div>
+                </div>
+                <div class="habit-grid">
+                    <label class="habit-check"><input type="checkbox" id="chkWater"> 💧 4L Water</label>
+                    <label class="habit-check"><input type="checkbox" id="chkSteps"> 👟 10k Steps</label>
+                    <label class="habit-check"><input type="checkbox" id="chkSleep"> 😴 7h Sleep</label>
+                    <label class="habit-check"><input type="checkbox" id="chkWalk"> 🚶 Walk after meals</label>
+                    <label class="habit-check"><input type="checkbox" id="chkWorkout"> 🏋️ Workout done</label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Notes</label><input type="text" id="logNotes" placeholder="How did you feel today?"></div>
+                </div>
+                <button onclick="saveDailyEntry()"><i class="fas fa-save"></i> Save & Sync</button>
+                <div id="saveMessage" style="margin-top: 12px; color: #48bb78;"></div>
+            </div>
+        </div>
+
+        <!-- Meal Plan -->
+        <div id="meal" class="tab-pane">
+            <div class="card">
+                <div class="card-title">🍽️ Daily Meal Plan (1800 kcal)</div>
+                <div><strong>🌅 Breakfast (6:30-7:30 AM):</strong> Idli 100g / Dosa 80g / Oats 30g + 3 whole eggs or 400ml milk + Sambar</div>
+                <div><strong>🍛 Lunch (12:30-1:30 PM):</strong> Chapati 50g or Rice 150g + Chicken 150g / Paneer 150g / Chickpeas + Large Salad</div>
+                <div><strong>🍎 Snacks (4-5 PM):</strong> Watermelon 250g, Green tea, Apple, or Protein bar</div>
+                <div><strong>🏋️ Pre-Workout:</strong> Black coffee + Banana 100g</div>
+                <div><strong>💪 Post-Workout:</strong> Egg whites 5 / Whey protein 1 scoop / Sprouts 100g</div>
+                <div><strong>🌙 Dinner (7-8 PM):</strong> Grilled fish/chicken 150g + Chapati 50g + Steamed vegetables</div>
+                <div class="habit-check" style="margin-top: 12px;">⚠️ Use 1-1.5 tsp oil/ghee only. Avoid chutney, coconut milk, sugar, packaged foods</div>
+            </div>
+        </div>
+
+        <!-- Workout Plan -->
+        <div id="workout" class="tab-pane">
+            <div class="card">
+                <div class="card-title">🏋️ Progressive Workout Plan (5 Phases)</div>
+                <div class="scroll-table">
+                    <table>
+                        <thead><tr><th>Day</th><th>Focus</th><th>Exercises (Sets x Reps)</th><th>Cardio</th></tr></thead>
+                        <tbody>
+                            <tr><td>Day 1</td><td>Chest + Triceps</td><td>Flat DB Fly (3x10→4x12), Incline Press, Tricep Pushdown, Crunches, Plank</td><td>300-400 cal</td></tr>
+                            <tr><td>Day 2</td><td>Back + Biceps</td><td>Lat Pulldown, Cable Row, Face Pulls, Bicep Curls, Hammer Curls</td><td>300-400 cal</td></tr>
+                            <tr><td>Day 3</td><td>Cardio Only</td><td>LISS / Running / Cycling / Swimming</td><td>500-550 cal</td></tr>
+                            <tr><td>Day 4</td><td>Shoulder + Abs</td><td>Shoulder Press, Lateral Raises, Front Raises, Shrugs, Plank, Crunches</td><td>300-400 cal</td></tr>
+                            <tr><td>Day 5</td><td>Legs</td><td>Squats/Hack Squats, Leg Press, Leg Extension, Leg Curl, Calf Raises</td><td>300-400 cal</td></tr>
+                            <tr><td>Day 6</td><td>Cardio Only</td><td>Active recovery, light cardio</td><td>500-550 cal</td></tr>
+                            <tr><td>Day 7</td><td>REST</td><td>Stretching, foam rolling, mobility work</td><td>-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: #f0f9ff; border-radius: 16px;">
+                    <i class="fas fa-info-circle"></i> <strong>Progression:</strong> Weeks 1-2: 3 sets, Weeks 3-5: 4 sets, Increase weight by 2.5-5kg when you hit all reps
+                </div>
+            </div>
+        </div>
+
+        <!-- User History -->
+        <div id="history" class="tab-pane">
+            <div class="card">
+                <div class="card-title">📜 All Your Entries</div>
+                <button onclick="exportUserData()" style="background: #48bb78; margin-right: 8px;"><i class="fas fa-download"></i> Export My Data</button>
+                <div class="scroll-table" style="margin-top: 16px;">
+                    <table id="historyTable">
+                        <thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>💧</th><th>👟</th><th>😴</th><th>🏋️</th><th>Notes</th></tr></thead>
+                        <tbody><tr><td colspan="8">Loading...<td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="admin" class="tab-pane">
+            <div class="card">
+                <div class="card-title">👑 Admin Dashboard - Monitor All Users</div>
+                <div class="user-selector">
+                    <strong>Select User to View:</strong>
+                    <div id="userList" class="user-list">
+                        <div class="user-chip">Loading users...</div>
+                    </div>
+                </div>
+                <div id="adminUserStats">
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-value" id="adminTotalUsers">0</div><div>Total Users</div></div>
+                        <div class="stat-card"><div class="stat-value" id="adminActiveToday">0</div><div>Active Today</div></div>
+                        <div class="stat-card"><div class="stat-value" id="adminAvgWeightLoss">0</div><div>Avg Weight Loss (kg)</div></div>
+                        <div class="stat-card"><div class="stat-value" id="adminComplianceRate">0%</div><div>Workout Compliance</div></div>
+                    </div>
+                </div>
+                <div id="selectedUserData" style="margin-top: 20px;">
+                    <h4>Selected User Progress</h4>
+                    <canvas id="adminUserChart" height="200"></canvas>
+                    <div class="scroll-table" style="margin-top: 16px;">
+                        <table id="adminUserTable"><thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>Workout</th><th>Water</th><th>Sleep</th></tr></thead><tbody><tr><td>Select a user</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="syncStatus" class="sync-status"><i class="fas fa-cloud-upload-alt"></i> Connected</div>
+
+    <script>
+        // ==================== SUPABASE CONFIGURATION ====================
+        // Replace with your Supabase credentials from https://supabase.com
+        // Step 1: Create a free Supabase account
+        // Step 2: Create a new project
+        // Step 3: Copy these values from Project Settings > API
+        const SUPABASE_URL = "https://xchienrpazojfijynfud.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaGllbnJwYXpvamZpanluZnVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjUzMTQsImV4cCI6MjA5MDAwMTMxNH0.u-dvK3MQ3K_m7uxiaXqgyccEP0ea1WcAZPzOS7xthNM";
+        
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let currentUser = null;
+        let currentUserData = [];
+        let isAdmin = false;
+        let allUsers = [];
+        let selectedUserId = null;
+        let weightChart = null;
+        let adminChart = null;
+        
+        // ==================== DATABASE SETUP ====================
+        // You need to create these tables in Supabase SQL Editor:
+        /*
+        -- Users table (extends auth.users)
+        CREATE TABLE public.profiles (
+            id UUID REFERENCES auth.users(id) PRIMARY KEY,
+            name TEXT,
+            height NUMERIC,
+            goal TEXT,
+            is_admin BOOLEAN DEFAULT false,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+        
+        -- Daily entries table
+        CREATE TABLE public.entries (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+            date DATE NOT NULL,
+            weight NUMERIC,
+            calories INTEGER,
+            water BOOLEAN DEFAULT false,
+            steps BOOLEAN DEFAULT false,
+            sleep BOOLEAN DEFAULT false,
+            walk_after_meals BOOLEAN DEFAULT false,
+            workout_done BOOLEAN DEFAULT false,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT NOW(),
+            UNIQUE(user_id, date)
+        );
+        
+        -- Enable Row Level Security
+        ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE public.entries ENABLE ROW LEVEL SECURITY;
+        
+        -- Policies: Users can read/update their own profile
+        CREATE POLICY "Users can view own profile" ON public.profiles
+            FOR SELECT USING (auth.uid() = id);
+        CREATE POLICY "Users can update own profile" ON public.profiles
+            FOR UPDATE USING (auth.uid() = id);
+        
+        -- Policies for entries: Users can CRUD their own entries
+        CREATE POLICY "Users can view own entries" ON public.entries
+            FOR SELECT USING (auth.uid() = user_id);
+        CREATE POLICY "Users can insert own entries" ON public.entries
+            FOR INSERT WITH CHECK (auth.uid() = user_id);
+        CREATE POLICY "Users can update own entries" ON public.entries
+            FOR UPDATE USING (auth.uid() = user_id);
+        CREATE POLICY "Users can delete own entries" ON public.entries
+            FOR DELETE USING (auth.uid() = user_id);
+        
+        -- Admin policy: Admins can view all data
+        CREATE POLICY "Admins can view all profiles" ON public.profiles
+            FOR SELECT USING (
+                EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+            );
+        CREATE POLICY "Admins can view all entries" ON public.entries
+            FOR SELECT USING (
+                EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+            );
+        */
+        
+        // ==================== AUTHENTICATION ====================
+        async function signup() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const weight = parseFloat(document.getElementById('signupWeight').value);
+            const height = parseFloat(document.getElementById('signupHeight').value);
+            const goal = document.getElementById('signupGoal').value;
+            
+            if (!name || !email || !password) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            try {
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email, password
+                });
+                
+                if (authError) throw authError;
+                
+                // Create profile
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        id: authData.user.id,
+                        name: name,
+                        height: height || null,
+                        goal: goal,
+                        is_admin: false
+                    }]);
+                
+                if (profileError) throw profileError;
+                
+                // Create first entry with starting weight
+                if (weight) {
+                    const today = new Date().toISOString().slice(0,10);
+                    await supabase.from('entries').insert([{
+                        user_id: authData.user.id,
+                        date: today,
+                        weight: weight
+                    }]);
+                }
+                
+                alert('Account created successfully! Please login.');
+                showLogin();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+        
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email, password
+                });
+                if (error) throw error;
+                
+                // Check if user is admin
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', data.user.id)
+                    .single();
+                
+                isAdmin = profile?.is_admin || false;
+                currentUser = data.user;
+                
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                
+                loadUserData();
+                if (isAdmin) {
+                    document.getElementById('adminBadge').style.display = 'inline-block';
+                    document.querySelector('.admin-tab').style.display = 'block';
+                    loadAllUsers();
+                }
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+        
+        async function logout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            isAdmin = false;
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+        
+        // ==================== LOAD USER DATA ====================
+        async function loadUserData(userId = null) {
+            const targetId = userId || currentUser.id;
+            
+            // Load profile
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', targetId)
+                .single();
+            
+            if (profile && (!userId || userId === currentUser.id)) {
+                document.getElementById('userNameDisplay').innerHTML = `<i class="fas fa-user"></i> ${profile.name || 'User'}`;
+                document.getElementById('userStatsDisplay').innerHTML = `📏 ${profile.height || '—'} cm | 🎯 ${profile.goal || 'Weight Loss'}`;
+            }
+            
+            // Load entries
+            let query = supabase.from('entries').select('*').eq('user_id', targetId).order('date', { ascending: true });
+            
+            // If admin viewing another user, use admin policy (already allowed)
+            const { data: entries } = await query;
+            
+            if (userId && userId !== currentUser.id) {
+                currentUserData = entries || [];
+                updateAdminUserView();
+            } else {
+                currentUserData = entries || [];
+                updateAllUI();
+            }
+        }
+        
+        // ==================== ADMIN FUNCTIONS ====================
+        async function loadAllUsers() {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            allUsers = profiles || [];
+            
+            const userListDiv = document.getElementById('userList');
+            userListDiv.innerHTML = '';
+            
+            allUsers.forEach(user => {
+                const chip = document.createElement('div');
+                chip.className = 'user-chip';
+                chip.innerHTML = `<i class="fas fa-user"></i> ${user.name || user.id.slice(0,8)}`;
+                chip.onclick = () => selectUserForAdmin(user.id, user.name);
+                userListDiv.appendChild(chip);
+            });
+            
+            // Update stats
+            document.getElementById('adminTotalUsers').innerText = allUsers.length;
+            
+            // Calculate active today
+            const today = new Date().toISOString().slice(0,10);
+            const { data: todayEntries } = await supabase
+                .from('entries')
+                .select('user_id')
+                .eq('date', today);
+            
+            const activeUsers = new Set(todayEntries?.map(e => e.user_id) || []);
+            document.getElementById('adminActiveToday').innerText = activeUsers.size;
+            
+            // Calculate average weight loss
+            const { data: firstEntries } = await supabase
+                .from('entries')
+                .select('user_id, weight')
+                .order('date', { ascending: true });
+            
+            const firstWeightMap = {};
+            firstEntries?.forEach(e => {
+                if (!firstWeightMap[e.user_id]) firstWeightMap[e.user_id] = e.weight;
+            });
+            
+            const { data: lastEntries } = await supabase
+                .from('entries')
+                .select('user_id, weight')
+                .order('date', { ascending: false });
+            
+            const lastWeightMap = {};
+            lastEntries?.forEach(e => {
+                if (!lastWeightMap[e.user_id]) lastWeightMap[e.user_id] = e.weight;
+            });
+            
+            let totalLoss = 0;
+            let usersWithData = 0;
+            Object.keys(firstWeightMap).forEach(uid => {
+                if (firstWeightMap[uid] && lastWeightMap[uid]) {
+                    totalLoss += firstWeightMap[uid] - lastWeightMap[uid];
+                    usersWithData++;
+                }
+            });
+            
+            const avgLoss = usersWithData > 0 ? (totalLoss / usersWithData).toFixed(1) : 0;
+            document.getElementById('adminAvgWeightLoss').innerText = avgLoss;
+            
+            // Calculate compliance rate (workout done in last 7 days)
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const weekAgoStr = weekAgo.toISOString().slice(0,10);
+            
+            const { data: recentEntries } = await supabase
+                .from('entries')
+                .select('workout_done')
+                .gte('date', weekAgoStr);
+            
+            const totalWorkouts = recentEntries?.filter(e => e.workout_done).length || 0;
+            const totalEntries = recentEntries?.length || 1;
+            document.getElementById('adminComplianceRate').innerText = Math.round((totalWorkouts / totalEntries) * 100) + '%';
+        }
+        
+        async function selectUserForAdmin(userId, userName) {
+            selectedUserId = userId;
+            document.getElementById('selectedUserData').querySelector('h4').innerHTML = `📊 ${userName}'s Progress`;
+            await loadUserData(userId);
+        }
+        
+        function updateAdminUserView() {
+            const sorted = [...currentUserData].sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            // Update chart
+            const ctx = document.getElementById('adminUserChart')?.getContext('2d');
+            if (ctx && sorted.length > 0) {
+                const labels = sorted.map(e => e.date.slice(5));
+                const weights = sorted.map(e => e.weight);
+                
+                if (adminChart) adminChart.destroy();
+                adminChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: 'Weight (kg)', data: weights, borderColor: '#667eea', tension: 0.2, fill: false }] },
+                    options: { responsive: true, maintainAspectRatio: true }
+                });
+            }
+            
+            // Update table
+            const tbody = document.querySelector('#adminUserTable tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                sorted.slice().reverse().forEach(e => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).innerText = e.date;
+                    row.insertCell(1).innerText = e.weight || '—';
+                    row.insertCell(2).innerText = e.calories || '—';
+                    row.insertCell(3).innerHTML = e.workout_done ? '✅' : '❌';
+                    row.insertCell(4).innerHTML = e.water ? '✅' : '❌';
+                    row.insertCell(5).innerHTML = e.sleep ? '✅' : '❌';
+                });
+            }
+        }
+        
+        // ==================== USER FUNCTIONS ====================
+        async function saveDailyEntry() {
+            const date = document.getElementById('logDate').value;
+            if (!date) {
+                alert('Please select date');
+                return;
+            }
+            
+            const entry = {
+                user_id: currentUser.id,
+                date: date,
+                weight: parseFloat(document.getElementById('logWeight').value) || null,
+                calories: parseInt(document.getElementById('logCalories').value) || null,
+                water: document.getElementById('chkWater').checked,
+                steps: document.getElementById('chkSteps').checked,
+                sleep: document.getElementById('chkSleep').checked,
+                walk_after_meals: document.getElementById('chkWalk').checked,
+                workout_done: document.getElementById('chkWorkout').checked,
+                notes: document.getElementById('logNotes').value || null
+            };
+            
+            try {
+                const { error } = await supabase
+                    .from('entries')
+                    .upsert(entry, { onConflict: 'user_id,date' });
+                
+                if (error) throw error;
+                
+                document.getElementById('saveMessage').innerHTML = '✅ Saved & Synced across all devices!';
+                setTimeout(() => document.getElementById('saveMessage').innerHTML = '', 2000);
+                
+                await loadUserData();
+            } catch (error) {
+                alert('Error saving: ' + error.message);
+            }
+        }
+        
+        function updateAllUI() {
+            updateDashboard();
+            updateHistoryTable();
+            updateWeightChart();
+            updateHabitSummary();
+            populateTodayIfExists();
+        }
+        
+        function updateDashboard() {
+            const today = new Date().toISOString().slice(0,10);
+            const todayEntry = currentUserData.find(e => e.date === today);
+            document.getElementById('todayWeight').innerText = todayEntry?.weight || '—';
+            document.getElementById('todayCalories').innerText = todayEntry?.calories || '—';
+            
+            // Calculate streak
+            let streak = 0;
+            for (let i = currentUserData.length - 1; i >= 0; i--) {
+                if (currentUserData[i].workout_done) streak++;
+                else break;
+            }
+            document.getElementById('streakDays').innerText = streak;
+            document.getElementById('totalWorkouts').innerText = currentUserData.filter(e => e.workout_done).length;
+            
+            // Weight change
+            const withWeight = currentUserData.filter(e => e.weight);
+            if (withWeight.length >= 2) {
+                const first = withWeight[0].weight;
+                const last = withWeight[withWeight.length - 1].weight;
+                const change = (last - first).toFixed(1);
+                document.getElementById('weightChange').innerHTML = `${change > 0 ? '+' : ''}${change} kg`;
+            }
+        }
+        
+        function updateWeightChart() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const sorted = [...currentUserData].filter(e => e.weight).slice(-30);
+            const labels = sorted.map(e => e.date.slice(5));
+            const weights = sorted.map(e => e.weight);
+            
+            if (weightChart) weightChart.destroy();
+            if (sorted.length > 0) {
+                weightChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets: [{ label: 'Weight (kg)', data: weights, borderColor: '#667eea', tension: 0.2, fill: false, pointBackgroundColor: '#764ba2' }] },
+                    options: { responsive: true, maintainAspectRatio: true }
+                });
+            }
+        }
+        
+        function updateHabitSummary() {
+            const last7 = [...currentUserData].reverse().slice(0,7);
+            if (last7.length === 0) {
+                document.getElementById('habitSummary').innerHTML = 'No data yet. Start logging!';
+                return;
+            }
+            const water = last7.filter(e=>e.water).length;
+            const steps = last7.filter(e=>e.steps).length;
+            const sleep = last7.filter(e=>e.sleep).length;
+            const workout = last7.filter(e=>e.workout_done).length;
+            document.getElementById('habitSummary').innerHTML = `
+                <div style="display:flex; justify-content:space-around; flex-wrap:wrap;">
+                    <div>💧 Water: ${water}/7</div>
+                    <div>👟 Steps: ${steps}/7</div>
+                    <div>😴 Sleep: ${sleep}/7</div>
+                    <div>🏋️ Workout: ${workout}/7</div>
+                </div>
+                <div class="stat-card" style="margin-top:12px;">🎯 Compliance: ${Math.round((water+steps+sleep+workout)/28*100)}%</div>
+            `;
+        }
+        
+        function updateHistoryTable() {
+            const tbody = document.querySelector('#historyTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (currentUserData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8">No entries yet</td></tr>';
+                return;
+            }
+            [...currentUserData].reverse().forEach(e => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = e.date;
+                row.insertCell(1).innerText = e.weight || '—';
+                row.insertCell(2).innerText = e.calories || '—';
+                row.insertCell(3).innerHTML = e.water ? '✅' : '❌';
+                row.insertCell(4).innerHTML = e.steps ? '✅' : '❌';
+                row.insertCell(5).innerHTML = e.sleep ? '✅' : '❌';
+                row.insertCell(6).innerHTML = e.workout_done ? '✅' : '❌';
+                row.insertCell(7).innerText = e.notes || '—';
+            });
+        }
+        
+        function populateTodayIfExists() {
+            const today = new Date().toISOString().slice(0,10);
+            const dateInput = document.getElementById('logDate');
+            if (!dateInput.value) dateInput.value = today;
+            
+            const existing = currentUserData.find(e => e.date === dateInput.value);
+            if (existing) {
+                document.getElementById('logWeight').value = existing.weight || '';
+                document.getElementById('logCalories').value = existing.calories || '';
+                document.getElementById('chkWater').checked = existing.water || false;
+                document.getElementById('chkSteps').checked = existing.steps || false;
+                document.getElementById('chkSleep').checked = existing.sleep || false;
+                document.getElementById('chkWalk').checked = existing.walk_after_meals || false;
+                document.getElementById('chkWorkout').checked = existing.workout_done || false;
+                document.getElementById('logNotes').value = existing.notes || '';
+            } else {
+                document.getElementById('logWeight').value = '';
+                document.getElementById('logCalories').value = '';
+                document.getElementById('chkWater').checked = false;
+                document.getElementById('chkSteps').checked = false;
+                document.getElementById('chkSleep').checked = false;
+                document.getElementById('chkWalk').checked = false;
+                document.getElementById('chkWorkout').checked = false;
+                document.getElementById('logNotes').value = '';
+            }
+        }
+        
+        function exportUserData() {
+            const dataStr = JSON.stringify(currentUserData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `my_transformation_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active-pane'));
+                document.getElementById(target).classList.add('active-pane');
+                
+                if (target === 'admin' && isAdmin) {
+                    loadAllUsers();
+                }
+            });
+        });
+        
+        document.getElementById('logDate')?.addEventListener('change', populateTodayIfExists);
+        
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        }
+        
+        function showLogin() {
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+        
+        // Check existing session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>

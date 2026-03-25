@@ -37,8 +37,9 @@
             border: 2px solid #e2e8f0;
             border-radius: 48px;
             font-size: 16px;
+            transition: all 0.3s;
         }
-        .input-group input:focus { border-color: #667eea; outline: none; }
+        .input-group input:focus, .input-group select:focus { border-color: #667eea; outline: none; }
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -49,6 +50,12 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         .toggle-auth { text-align: center; margin-top: 20px; color: #718096; }
         .toggle-auth a { color: #667eea; text-decoration: none; font-weight: bold; cursor: pointer; }
@@ -109,6 +116,7 @@
             font-weight: 600;
             cursor: pointer;
             color: #4a5568;
+            transition: all 0.3s;
         }
         .tab-btn.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -177,7 +185,7 @@
             cursor: pointer;
         }
         .scroll-table { max-height: 500px; overflow-y: auto; }
-        table { width: 100%; font-size: 0.8rem; }
+        table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
         th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #f7fafc; position: sticky; top: 0; }
         .stats-grid {
@@ -207,7 +215,7 @@
         .error-message {
             background: #fee2e2;
             color: #dc2626;
-            padding: 10px;
+            padding: 12px;
             border-radius: 12px;
             margin-top: 12px;
             font-size: 14px;
@@ -216,11 +224,35 @@
         .success-message {
             background: #dcfce7;
             color: #16a34a;
-            padding: 10px;
+            padding: 12px;
             border-radius: 12px;
             margin-top: 12px;
             font-size: 14px;
             text-align: center;
+        }
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
         }
         @media (max-width: 640px) {
             .app-container { padding: 12px; }
@@ -231,6 +263,7 @@
     </style>
 </head>
 <body>
+    <!-- Auth Container -->
     <div id="authContainer" class="auth-container">
         <div class="auth-card">
             <h2><i class="fas fa-dumbbell"></i> Transformation Hub</h2>
@@ -241,7 +274,7 @@
                 <div class="input-group">
                     <input type="password" id="loginPassword" placeholder="Password" required>
                 </div>
-                <button class="btn-primary" onclick="login()">Login</button>
+                <button class="btn-primary" id="loginBtn" onclick="login()">Login</button>
                 <div class="toggle-auth">
                     Don't have an account? <a onclick="showSignup()">Sign Up</a>
                 </div>
@@ -270,7 +303,7 @@
                         <option value="maintenance">Maintenance</option>
                     </select>
                 </div>
-                <button class="btn-primary" onclick="signup()">Create Account</button>
+                <button class="btn-primary" id="signupBtn" onclick="signup()">Create Account</button>
                 <div class="toggle-auth">
                     Already have an account? <a onclick="showLogin()">Login</a>
                 </div>
@@ -279,6 +312,7 @@
         </div>
     </div>
 
+    <!-- Main App Container -->
     <div id="appContainer" class="app-container">
         <div class="app-header">
             <div class="user-info">
@@ -297,6 +331,8 @@
             <button class="tab-btn" data-tab="history"><i class="fas fa-history"></i> History</button>
             <button class="tab-btn admin-tab" data-tab="admin" style="display:none;"><i class="fas fa-users"></i> Admin Panel</button>
         </div>
+
+        <!-- Dashboard -->
         <div id="dashboard" class="tab-pane active-pane">
             <div class="card">
                 <div class="card-title">📊 Today's Progress</div>
@@ -317,6 +353,8 @@
                 <div id="habitSummary"></div>
             </div>
         </div>
+
+        <!-- Daily Log -->
         <div id="log" class="tab-pane">
             <div class="card">
                 <div class="card-title">📝 Log Today's Data</div>
@@ -335,10 +373,12 @@
                 <div class="form-row">
                     <div class="form-group"><label>Notes</label><input type="text" id="logNotes" placeholder="How did you feel today?"></div>
                 </div>
-                <button onclick="saveDailyEntry()"><i class="fas fa-save"></i> Save & Sync</button>
+                <button id="saveBtn" onclick="saveDailyEntry()"><i class="fas fa-save"></i> Save & Sync</button>
                 <div id="saveMessage" style="margin-top: 12px;"></div>
             </div>
         </div>
+
+        <!-- Meal Plan -->
         <div id="meal" class="tab-pane">
             <div class="card">
                 <div class="card-title">🍽️ Daily Meal Plan (1800 kcal)</div>
@@ -348,8 +388,11 @@
                 <div><strong>🏋️ Pre-Workout:</strong> Black coffee + Banana 100g</div>
                 <div><strong>💪 Post-Workout:</strong> Egg whites 5 / Whey protein 1 scoop</div>
                 <div><strong>🌙 Dinner:</strong> Grilled fish/chicken 150g + Chapati 50g + Vegetables</div>
+                <div style="margin-top: 12px; padding: 12px; background: #fef2e0; border-radius: 16px;">⚠️ Use 1-1.5 tsp oil/ghee only. Avoid chutney, coconut milk, sugar</div>
             </div>
         </div>
+
+        <!-- Workout Plan -->
         <div id="workout" class="tab-pane">
             <div class="card">
                 <div class="card-title">🏋️ Progressive Workout Plan</div>
@@ -369,63 +412,73 @@
                 </div>
             </div>
         </div>
+
+        <!-- History -->
         <div id="history" class="tab-pane">
             <div class="card">
                 <div class="card-title">📜 All Your Entries</div>
                 <button onclick="exportUserData()" style="background: #48bb78;"><i class="fas fa-download"></i> Export My Data</button>
                 <div class="scroll-table" style="margin-top: 16px;">
-                    <table id="historyTable"><thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>💧</th><th>👟</th><th>😴</th><th>🏋️</th><th>Notes</th></tr></thead><tbody><tr><td colspan="8">Loading...</td></tr></tbody></table>
+                    <table id="historyTable"><thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>💧</th><th>👟</th><th>😴</th><th>🏋️</th><th>Notes</th></tr></thead><tbody><tr><td colspan="8" style="text-align:center;"><div class="loader"></div> Loading...</td></tr></tbody></table>
                 </div>
             </div>
         </div>
+
+        <!-- Admin Panel -->
         <div id="admin" class="tab-pane">
             <div class="card">
                 <div class="card-title">👑 Admin Dashboard</div>
-                <div id="adminContent">Loading admin panel...</div>
+                <div id="adminContent"><div class="loader"></div> Loading admin panel...</div>
             </div>
         </div>
     </div>
-    <div id="syncStatus" class="sync-status"><i class="fas fa-spinner fa-pulse"></i> Connecting...</div>
+
+    <div id="syncStatus" class="sync-status"><i class="fas fa-spinner fa-pulse"></i> Connecting to Supabase...</div>
 
     <script>
         // ==================== SUPABASE CONFIGURATION ====================
-        // 🔴 IMPORTANT: Replace with your actual anon key from Supabase 🔴
-        // Go to: https://supabase.com/dashboard/project/xchienrpazojfijynfud/settings/api
-        // Copy the "anon public key"
-        
         const SUPABASE_URL = "https://xchienrpazojfijynfud.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaGllbnJwYXpvamZpanluZnVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjUzMTQsImV4cCI6MjA5MDAwMTMxNH0.u-dvK3MQ3K_m7uxiaXqgyccEP0ea1WcAZPzOS7xthNM";  
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaGllbnJwYXpvamZpanluZnVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjUzMTQsImV4cCI6MjA5MDAwMTMxNH0.u-dvK3MQ3K_m7uxiaXqgyccEP0ea1WcAZPzOS7xthNM";
         
-        // Check if anon key is still placeholder
-        if (SUPABASE_ANON_KEY === "YOUR_ANON_KEY_HERE") {
-            document.getElementById('syncStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> ERROR: Please add your Supabase anon key to the HTML file!';
-            console.error("Supabase anon key not configured!");
-        }
+        // Initialize Supabase client (only once)
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+        // Global variables
         let currentUser = null;
         let currentUserData = [];
         let isAdmin = false;
         let weightChart = null;
         
+        // Helper function to show/hide loader on buttons
+        function setButtonLoading(buttonId, isLoading, originalText) {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+            if (isLoading) {
+                btn.innerHTML = `<span class="btn-loader"></span> Processing...`;
+                btn.disabled = true;
+            } else {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        
         // Test connection
         async function testConnection() {
             try {
-                const { data, error } = await supabase.from('profiles').select('count').limit(1);
+                const { error } = await _supabase.from('profiles').select('count', { count: 'exact', head: true });
                 if (error) {
-                    console.error("Connection error:", error);
                     document.getElementById('syncStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Database not ready - run SQL first!';
+                    console.error("Connection error:", error);
                 } else {
-                    document.getElementById('syncStatus').innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Connected to Supabase';
+                    document.getElementById('syncStatus').innerHTML = '<i class="fas fa-check-circle"></i> Connected to Supabase';
                 }
             } catch (e) {
-                console.error("Connection failed:", e);
-                document.getElementById('syncStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Connection failed - check anon key';
+                document.getElementById('syncStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Connection failed';
             }
         }
         testConnection();
         
+        // Signup function
         async function signup() {
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
@@ -434,8 +487,6 @@
             const height = parseFloat(document.getElementById('signupHeight').value);
             const goal = document.getElementById('signupGoal').value;
             const messageDiv = document.getElementById('signupMessage');
-            
-            messageDiv.innerHTML = '<div class="sync-status" style="position:relative; margin-top:10px;"><i class="fas fa-spinner fa-pulse"></i> Creating account...</div>';
             
             if (!name || !email || !password) {
                 messageDiv.innerHTML = '<div class="error-message">Please fill all required fields</div>';
@@ -447,89 +498,55 @@
                 return;
             }
             
+            setButtonLoading('signupBtn', true, 'Create Account');
+            messageDiv.innerHTML = '<div class="success-message"><div class="loader"></div> Creating account...</div>';
+            
             try {
-                console.log("Attempting signup for:", email);
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email, password
-                });
+                const { data: authData, error: authError } = await _supabase.auth.signUp({ email, password });
                 
-                if (authError) {
-                    console.error("Auth error:", authError);
-                    messageDiv.innerHTML = `<div class="error-message">${authError.message}</div>`;
-                    return;
-                }
+                if (authError) throw authError;
+                if (!authData.user) throw new Error('Signup failed - no user created');
                 
-                if (!authData.user) {
-                    messageDiv.innerHTML = '<div class="error-message">Signup failed - no user created</div>';
-                    return;
-                }
-                
-                console.log("User created:", authData.user.id);
-                
-                // Create profile
-                const { error: profileError } = await supabase
+                const { error: profileError } = await _supabase
                     .from('profiles')
-                    .insert([{
-                        id: authData.user.id,
-                        name: name,
-                        height: height || null,
-                        goal: goal,
-                        is_admin: false
-                    }]);
+                    .insert([{ id: authData.user.id, name: name, height: height || null, goal: goal, is_admin: false }]);
                 
-                if (profileError) {
-                    console.error("Profile error:", profileError);
-                    messageDiv.innerHTML = `<div class="error-message">Profile error: ${profileError.message}</div>`;
-                    return;
-                }
+                if (profileError) throw profileError;
                 
-                // Create first entry with starting weight
                 if (weight) {
                     const today = new Date().toISOString().slice(0,10);
-                    await supabase.from('entries').insert([{
-                        user_id: authData.user.id,
-                        date: today,
-                        weight: weight
-                    }]);
+                    await _supabase.from('entries').insert([{ user_id: authData.user.id, date: today, weight: weight }]);
                 }
                 
                 messageDiv.innerHTML = '<div class="success-message">✅ Account created successfully! Please login.</div>';
-                
-                // Clear form and show login
-                setTimeout(() => {
-                    showLogin();
-                    messageDiv.innerHTML = '';
-                }, 2000);
+                setTimeout(() => { showLogin(); messageDiv.innerHTML = ''; }, 2000);
                 
             } catch (error) {
-                console.error("Signup error:", error);
-                messageDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                messageDiv.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
+            } finally {
+                setButtonLoading('signupBtn', false, 'Create Account');
             }
         }
         
+        // Login function
         async function login() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const messageDiv = document.getElementById('loginMessage');
-            
-            messageDiv.innerHTML = '<div class="sync-status" style="position:relative; margin-top:10px;"><i class="fas fa-spinner fa-pulse"></i> Logging in...</div>';
             
             if (!email || !password) {
                 messageDiv.innerHTML = '<div class="error-message">Please enter email and password</div>';
                 return;
             }
             
+            setButtonLoading('loginBtn', true, 'Login');
+            messageDiv.innerHTML = '<div class="success-message"><div class="loader"></div> Logging in...</div>';
+            
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email, password
-                });
+                const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
                 
-                if (error) {
-                    messageDiv.innerHTML = `<div class="error-message">${error.message}</div>`;
-                    return;
-                }
-                
-                const { data: profile } = await supabase
+                const { data: profile } = await _supabase
                     .from('profiles')
                     .select('is_admin, name')
                     .eq('id', data.user.id)
@@ -548,27 +565,32 @@
                 if (isAdmin) {
                     document.getElementById('adminBadge').style.display = 'inline-block';
                     document.querySelector('.admin-tab').style.display = 'block';
+                    loadAdminPanel();
                 }
                 
                 await loadUserData();
                 
             } catch (error) {
-                messageDiv.innerHTML = `<div class="error-message">${error.message}</div>`;
+                messageDiv.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
+            } finally {
+                setButtonLoading('loginBtn', false, 'Login');
             }
         }
         
+        // Logout function
         async function logout() {
-            await supabase.auth.signOut();
+            await _supabase.auth.signOut();
             currentUser = null;
             isAdmin = false;
             document.getElementById('authContainer').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
         }
         
+        // Load user data
         async function loadUserData() {
             if (!currentUser) return;
             
-            const { data: entries } = await supabase
+            const { data: entries } = await _supabase
                 .from('entries')
                 .select('*')
                 .eq('user_id', currentUser.id)
@@ -578,6 +600,7 @@
             updateAllUI();
         }
         
+        // Save daily entry
         async function saveDailyEntry() {
             const date = document.getElementById('logDate').value;
             if (!date) {
@@ -598,22 +621,62 @@
                 notes: document.getElementById('logNotes').value || null
             };
             
+            const saveMsg = document.getElementById('saveMessage');
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="btn-loader"></span> Saving...';
+            saveBtn.disabled = true;
+            
             try {
-                const { error } = await supabase
+                const { error } = await _supabase
                     .from('entries')
                     .upsert(entry, { onConflict: 'user_id,date' });
                 
                 if (error) throw error;
                 
-                document.getElementById('saveMessage').innerHTML = '<div class="success-message">✅ Saved & Synced!</div>';
-                setTimeout(() => document.getElementById('saveMessage').innerHTML = '', 2000);
-                
+                saveMsg.innerHTML = '<div class="success-message">✅ Saved & Synced across all devices!</div>';
+                setTimeout(() => saveMsg.innerHTML = '', 3000);
                 await loadUserData();
+                
             } catch (error) {
-                document.getElementById('saveMessage').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                saveMsg.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
             }
         }
         
+        // Admin panel
+        async function loadAdminPanel() {
+            const { data: profiles } = await _supabase.from('profiles').select('*');
+            const { data: entries } = await _supabase.from('entries').select('*');
+            
+            let html = `
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value">${profiles?.length || 0}</div><div>Total Users</div></div>
+                    <div class="stat-card"><div class="stat-value">${entries?.length || 0}</div><div>Total Entries</div></div>
+                </div>
+                <div class="scroll-table" style="margin-top: 20px;">
+                    <h4>All Users</h4>
+                    <table><thead><tr><th>Name</th><th>Email</th><th>Height</th><th>Goal</th><th>Admin</th><th>Entries</th></tr></thead><tbody>`;
+            
+            profiles?.forEach(profile => {
+                const userEntries = entries?.filter(e => e.user_id === profile.id).length || 0;
+                html += `<tr>
+                    <td>${profile.name || '—'}</td>
+                    <td>${profile.id?.slice(0,20)}...</td>
+                    <td>${profile.height || '—'} cm</td>
+                    <td>${profile.goal || '—'}</td>
+                    <td>${profile.is_admin ? '✅' : '❌'}</td>
+                    <td>${userEntries}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table></div>`;
+            document.getElementById('adminContent').innerHTML = html;
+        }
+        
+        // Update all UI components
         function updateAllUI() {
             updateDashboard();
             updateHistoryTable();
@@ -651,11 +714,11 @@
             const labels = sorted.map(e => e.date.slice(5));
             const weights = sorted.map(e => e.weight);
             
-            if (window.weightChartInstance) window.weightChartInstance.destroy();
+            if (weightChart) weightChart.destroy();
             if (sorted.length > 0) {
-                window.weightChartInstance = new Chart(ctx, {
+                weightChart = new Chart(ctx, {
                     type: 'line',
-                    data: { labels, datasets: [{ label: 'Weight (kg)', data: weights, borderColor: '#667eea', tension: 0.2, fill: false }] },
+                    data: { labels, datasets: [{ label: 'Weight (kg)', data: weights, borderColor: '#667eea', tension: 0.2, fill: false, pointBackgroundColor: '#764ba2' }] },
                     options: { responsive: true, maintainAspectRatio: true }
                 });
             }
@@ -687,7 +750,7 @@
             if (!tbody) return;
             tbody.innerHTML = '';
             if (currentUserData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8">No entries yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No entries yet. Start logging!</td></tr>';
                 return;
             }
             [...currentUserData].reverse().forEach(e => {
@@ -732,6 +795,7 @@
             URL.revokeObjectURL(url);
         }
         
+        // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = btn.getAttribute('data-tab');
@@ -739,6 +803,10 @@
                 btn.classList.add('active');
                 document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active-pane'));
                 document.getElementById(target).classList.add('active-pane');
+                
+                if (target === 'admin' && isAdmin) {
+                    loadAdminPanel();
+                }
             });
         });
         
@@ -758,10 +826,36 @@
             document.getElementById('signupMessage').innerHTML = '';
         }
         
-        // Check existing session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        // Check existing session on load
+        _supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
-                login();
+                _supabase.auth.getUser().then(async ({ data: { user } }) => {
+                    if (user) {
+                        const { data: profile } = await _supabase
+                            .from('profiles')
+                            .select('is_admin, name')
+                            .eq('id', user.id)
+                            .single();
+                        
+                        isAdmin = profile?.is_admin || false;
+                        currentUser = user;
+                        
+                        document.getElementById('authContainer').style.display = 'none';
+                        document.getElementById('appContainer').style.display = 'block';
+                        
+                        if (profile?.name) {
+                            document.getElementById('userNameDisplay').innerHTML = `<i class="fas fa-user"></i> ${profile.name}`;
+                        }
+                        
+                        if (isAdmin) {
+                            document.getElementById('adminBadge').style.display = 'inline-block';
+                            document.querySelector('.admin-tab').style.display = 'block';
+                            loadAdminPanel();
+                        }
+                        
+                        await loadUserData();
+                    }
+                });
             }
         });
     </script>

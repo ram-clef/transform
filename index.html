@@ -244,16 +244,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .btn-loader {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid white;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-        }
         @media (max-width: 640px) {
             .app-container { padding: 12px; }
             .tabs { gap: 4px; }
@@ -274,9 +264,9 @@
                 <div class="input-group">
                     <input type="password" id="loginPassword" placeholder="Password" required>
                 </div>
-                <button class="btn-primary" id="loginBtn" onclick="login()">Login</button>
+                <button class="btn-primary" id="loginBtn" onclick="window.login()">Login</button>
                 <div class="toggle-auth">
-                    Don't have an account? <a onclick="showSignup()">Sign Up</a>
+                    Don't have an account? <a onclick="window.showSignup()">Sign Up</a>
                 </div>
                 <div id="loginMessage"></div>
             </div>
@@ -303,9 +293,9 @@
                         <option value="maintenance">Maintenance</option>
                     </select>
                 </div>
-                <button class="btn-primary" id="signupBtn" onclick="signup()">Create Account</button>
+                <button class="btn-primary" id="signupBtn" onclick="window.signup()">Create Account</button>
                 <div class="toggle-auth">
-                    Already have an account? <a onclick="showLogin()">Login</a>
+                    Already have an account? <a onclick="window.showLogin()">Login</a>
                 </div>
                 <div id="signupMessage"></div>
             </div>
@@ -320,7 +310,7 @@
                     <h3 id="userNameDisplay">Loading... <span id="adminBadge" class="admin-badge" style="display:none;">👑 ADMIN</span></h3>
                     <p id="userStatsDisplay"></p>
                 </div>
-                <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                <button class="btn-logout" onclick="window.logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
         <div class="tabs">
@@ -373,7 +363,7 @@
                 <div class="form-row">
                     <div class="form-group"><label>Notes</label><input type="text" id="logNotes" placeholder="How did you feel today?"></div>
                 </div>
-                <button id="saveBtn" onclick="saveDailyEntry()"><i class="fas fa-save"></i> Save & Sync</button>
+                <button id="saveBtn" onclick="window.saveDailyEntry()"><i class="fas fa-save"></i> Save & Sync</button>
                 <div id="saveMessage" style="margin-top: 12px;"></div>
             </div>
         </div>
@@ -398,7 +388,9 @@
                 <div class="card-title">🏋️ Progressive Workout Plan</div>
                 <div class="scroll-table">
                     <table>
-                        <thead><tr><th>Day</th><th>Focus</th><th>Exercises</th><th>Cardio</th></tr></thead>
+                        <thead>
+                            <tr><th>Day</th><th>Focus</th><th>Exercises</th><th>Cardio</th></tr>
+                        </thead>
                         <tbody>
                             <tr><td>Day 1</td><td>Chest + Triceps</td><td>Flat DB Fly, Incline Press, Tricep Pushdown, Crunches, Plank</td><td>300-400 cal</td></tr>
                             <tr><td>Day 2</td><td>Back + Biceps</td><td>Lat Pulldown, Cable Row, Face Pulls, Bicep Curls</td><td>300-400 cal</td></tr>
@@ -417,9 +409,12 @@
         <div id="history" class="tab-pane">
             <div class="card">
                 <div class="card-title">📜 All Your Entries</div>
-                <button onclick="exportUserData()" style="background: #48bb78;"><i class="fas fa-download"></i> Export My Data</button>
+                <button onclick="window.exportUserData()" style="background: #48bb78;"><i class="fas fa-download"></i> Export My Data</button>
                 <div class="scroll-table" style="margin-top: 16px;">
-                    <table id="historyTable"><thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>💧</th><th>👟</th><th>😴</th><th>🏋️</th><th>Notes</th></tr></thead><tbody><tr><td colspan="8" style="text-align:center;"><div class="loader"></div> Loading...</td></tr></tbody></table>
+                    <table id="historyTable">
+                        <thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>💧</th><th>👟</th><th>😴</th><th>🏋️</th><th>Notes</th></tr></thead>
+                        <tbody><tr><td colspan="8" style="text-align:center;"><div class="loader"></div> Loading...</td></tr></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -440,35 +435,19 @@
         const SUPABASE_URL = "https://xchienrpazojfijynfud.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaGllbnJwYXpvamZpanluZnVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjUzMTQsImV4cCI6MjA5MDAwMTMxNH0.u-dvK3MQ3K_m7uxiaXqgyccEP0ea1WcAZPzOS7xthNM";
         
-        // Initialize Supabase client (only once)
-        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Global variables
         let currentUser = null;
         let currentUserData = [];
         let isAdmin = false;
         let weightChart = null;
         
-        // Helper function to show/hide loader on buttons
-        function setButtonLoading(buttonId, isLoading, originalText) {
-            const btn = document.getElementById(buttonId);
-            if (!btn) return;
-            if (isLoading) {
-                btn.innerHTML = `<span class="btn-loader"></span> Processing...`;
-                btn.disabled = true;
-            } else {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-        
         // Test connection
         async function testConnection() {
             try {
-                const { error } = await _supabase.from('profiles').select('count', { count: 'exact', head: true });
+                const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
                 if (error) {
                     document.getElementById('syncStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Database not ready - run SQL first!';
-                    console.error("Connection error:", error);
                 } else {
                     document.getElementById('syncStatus').innerHTML = '<i class="fas fa-check-circle"></i> Connected to Supabase';
                 }
@@ -476,7 +455,6 @@
                 document.getElementById('syncStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Connection failed';
             }
         }
-        testConnection();
         
         // Signup function
         async function signup() {
@@ -498,16 +476,15 @@
                 return;
             }
             
-            setButtonLoading('signupBtn', true, 'Create Account');
             messageDiv.innerHTML = '<div class="success-message"><div class="loader"></div> Creating account...</div>';
             
             try {
-                const { data: authData, error: authError } = await _supabase.auth.signUp({ email, password });
+                const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
                 
                 if (authError) throw authError;
-                if (!authData.user) throw new Error('Signup failed - no user created');
+                if (!authData.user) throw new Error('Signup failed');
                 
-                const { error: profileError } = await _supabase
+                const { error: profileError } = await supabase
                     .from('profiles')
                     .insert([{ id: authData.user.id, name: name, height: height || null, goal: goal, is_admin: false }]);
                 
@@ -515,16 +492,14 @@
                 
                 if (weight) {
                     const today = new Date().toISOString().slice(0,10);
-                    await _supabase.from('entries').insert([{ user_id: authData.user.id, date: today, weight: weight }]);
+                    await supabase.from('entries').insert([{ user_id: authData.user.id, date: today, weight: weight }]);
                 }
                 
-                messageDiv.innerHTML = '<div class="success-message">✅ Account created successfully! Please login.</div>';
-                setTimeout(() => { showLogin(); messageDiv.innerHTML = ''; }, 2000);
+                messageDiv.innerHTML = '<div class="success-message">✅ Account created! Please login.</div>';
+                setTimeout(() => { window.showLogin(); messageDiv.innerHTML = ''; }, 2000);
                 
             } catch (error) {
                 messageDiv.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
-            } finally {
-                setButtonLoading('signupBtn', false, 'Create Account');
             }
         }
         
@@ -539,14 +514,13 @@
                 return;
             }
             
-            setButtonLoading('loginBtn', true, 'Login');
             messageDiv.innerHTML = '<div class="success-message"><div class="loader"></div> Logging in...</div>';
             
             try {
-                const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 
-                const { data: profile } = await _supabase
+                const { data: profile } = await supabase
                     .from('profiles')
                     .select('is_admin, name')
                     .eq('id', data.user.id)
@@ -572,14 +546,12 @@
                 
             } catch (error) {
                 messageDiv.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
-            } finally {
-                setButtonLoading('loginBtn', false, 'Login');
             }
         }
         
         // Logout function
         async function logout() {
-            await _supabase.auth.signOut();
+            await supabase.auth.signOut();
             currentUser = null;
             isAdmin = false;
             document.getElementById('authContainer').style.display = 'flex';
@@ -590,7 +562,7 @@
         async function loadUserData() {
             if (!currentUser) return;
             
-            const { data: entries } = await _supabase
+            const { data: entries } = await supabase
                 .from('entries')
                 .select('*')
                 .eq('user_id', currentUser.id)
@@ -622,34 +594,28 @@
             };
             
             const saveMsg = document.getElementById('saveMessage');
-            const saveBtn = document.getElementById('saveBtn');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<span class="btn-loader"></span> Saving...';
-            saveBtn.disabled = true;
+            saveMsg.innerHTML = '<div class="success-message"><div class="loader"></div> Saving...</div>';
             
             try {
-                const { error } = await _supabase
+                const { error } = await supabase
                     .from('entries')
                     .upsert(entry, { onConflict: 'user_id,date' });
                 
                 if (error) throw error;
                 
-                saveMsg.innerHTML = '<div class="success-message">✅ Saved & Synced across all devices!</div>';
+                saveMsg.innerHTML = '<div class="success-message">✅ Saved & Synced!</div>';
                 setTimeout(() => saveMsg.innerHTML = '', 3000);
                 await loadUserData();
                 
             } catch (error) {
                 saveMsg.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
-            } finally {
-                saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
             }
         }
         
         // Admin panel
         async function loadAdminPanel() {
-            const { data: profiles } = await _supabase.from('profiles').select('*');
-            const { data: entries } = await _supabase.from('entries').select('*');
+            const { data: profiles } = await supabase.from('profiles').select('*');
+            const { data: entries } = await supabase.from('entries').select('*');
             
             let html = `
                 <div class="stats-grid">
@@ -658,7 +624,7 @@
                 </div>
                 <div class="scroll-table" style="margin-top: 20px;">
                     <h4>All Users</h4>
-                    <table><thead><tr><th>Name</th><th>Email</th><th>Height</th><th>Goal</th><th>Admin</th><th>Entries</th></tr></thead><tbody>`;
+                    <table><thead><tr><th>Name</th><th>Email ID</th><th>Height</th><th>Goal</th><th>Admin</th><th>Entries</th></tr></thead><tbody>`;
             
             profiles?.forEach(profile => {
                 const userEntries = entries?.filter(e => e.user_id === profile.id).length || 0;
@@ -676,7 +642,7 @@
             document.getElementById('adminContent').innerHTML = html;
         }
         
-        // Update all UI components
+        // Update all UI
         function updateAllUI() {
             updateDashboard();
             updateHistoryTable();
@@ -718,7 +684,7 @@
             if (sorted.length > 0) {
                 weightChart = new Chart(ctx, {
                     type: 'line',
-                    data: { labels, datasets: [{ label: 'Weight (kg)', data: weights, borderColor: '#667eea', tension: 0.2, fill: false, pointBackgroundColor: '#764ba2' }] },
+                    data: { labels, datasets: [{ label: 'Weight (kg)', data: weights, borderColor: '#667eea', tension: 0.2, fill: false }] },
                     options: { responsive: true, maintainAspectRatio: true }
                 });
             }
@@ -795,6 +761,30 @@
             URL.revokeObjectURL(url);
         }
         
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            document.getElementById('loginMessage').innerHTML = '';
+            document.getElementById('signupMessage').innerHTML = '';
+        }
+        
+        function showLogin() {
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('loginMessage').innerHTML = '';
+            document.getElementById('signupMessage').innerHTML = '';
+        }
+        
+        // Attach functions to window for HTML onclick
+        window.login = login;
+        window.signup = signup;
+        window.logout = logout;
+        window.saveDailyEntry = saveDailyEntry;
+        window.exportUserData = exportUserData;
+        window.showSignup = showSignup;
+        window.showLogin = showLogin;
+        window.loadAdminPanel = loadAdminPanel;
+        
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -812,26 +802,12 @@
         
         document.getElementById('logDate')?.addEventListener('change', populateTodayIfExists);
         
-        function showSignup() {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('signupForm').style.display = 'block';
-            document.getElementById('loginMessage').innerHTML = '';
-            document.getElementById('signupMessage').innerHTML = '';
-        }
-        
-        function showLogin() {
-            document.getElementById('signupForm').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('loginMessage').innerHTML = '';
-            document.getElementById('signupMessage').innerHTML = '';
-        }
-        
         // Check existing session on load
-        _supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
-                _supabase.auth.getUser().then(async ({ data: { user } }) => {
+                supabase.auth.getUser().then(async ({ data: { user } }) => {
                     if (user) {
-                        const { data: profile } = await _supabase
+                        const { data: profile } = await supabase
                             .from('profiles')
                             .select('is_admin, name')
                             .eq('id', user.id)
@@ -858,6 +834,9 @@
                 });
             }
         });
+        
+        // Run connection test
+        testConnection();
     </script>
 </body>
 </html>
